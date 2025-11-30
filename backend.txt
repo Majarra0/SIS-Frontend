@@ -1,0 +1,265 @@
+endpoints:
+
+a complete list of API endpoints available in the Student Information System:
+
+# Authentication Endpoints
+- `POST /api/token/` - Obtain JWT token pair
+- `POST /api/token/refresh/` - Refresh JWT token
+
+# Users Endpoints (`/api/users/`)
+- `GET /api/users/` - List all users (admin only)
+- `POST /api/users/` - Create new user (admin only)
+- `GET /api/users/{id}/` - Get specific user
+- `PUT /api/users/{id}/` - Update user
+- `DELETE /api/users/{id}/` - Delete user
+- `GET /api/users/me/` - Get current user profile
+- `PUT /api/users/update_profile/` - Update current user's profile
+- `POST /api/users/create-with-personal-info/` - Create user with personal/contact info
+- `GET /api/users/{id}/with-info/` - Get user with personal/contact info
+- `GET /api/users/with-info/` - List all users with personal/contact info
+
+# Academic Endpoints (`/api/academic/`)
+## Programs
+- `GET /api/academic/programs/` - List academic programs
+- `POST /api/academic/programs/` - Create program (admin only)
+- `GET /api/academic/programs/{id}/` - Get specific program
+- `PUT /api/academic/programs/{id}/` - Update program
+- `DELETE /api/academic/programs/{id}/` - Delete program
+- `GET /api/academic/programs/{id}/courses/` - Get courses in program
+
+## Courses
+- `GET /api/academic/courses/` - List courses
+- `POST /api/academic/courses/` - Create course (admin only)
+- `GET /api/academic/courses/{id}/` - Get specific course
+- `PUT /api/academic/courses/{id}/` - Update course
+- `DELETE /api/academic/courses/{id}/` - Delete course
+- `GET /api/academic/courses/{id}/prerequisites/` - Get course prerequisites
+
+# Enrollment Endpoints (`/api/enrollment/`)
+## Terms
+- `GET /api/enrollment/terms/` - List terms
+- `POST /api/enrollment/terms/` - Create term (admin only)
+- `GET /api/enrollment/terms/{id}/` - Get specific term
+- `PUT /api/enrollment/terms/{id}/` - Update term
+- `GET /api/enrollment/terms/current/` - Get current term
+
+## Course Offerings
+- `GET /api/enrollment/offerings/` - List course offerings
+- `POST /api/enrollment/offerings/` - Create offering (admin only)
+- `GET /api/enrollment/offerings/{id}/` - Get specific offering
+- `PUT /api/enrollment/offerings/{id}/` - Update offering
+- `GET /api/enrollment/offerings/{id}/enrolled_students/` - Get enrolled students
+
+## Enrollments
+- `GET /api/enrollment/enrollments/` - List enrollments
+- `POST /api/enrollment/enrollments/` - Create enrollment
+- `GET /api/enrollment/enrollments/{id}/` - Get specific enrollment
+- `PUT /api/enrollment/enrollments/{id}/` - Update enrollment
+- `POST /api/enrollment/enrollments/{id}/drop_course/` - Drop a course
+- `GET /api/enrollment/enrollments/my_schedule/` - Get current user's schedule
+
+# Attendance Endpoints (`/api/attendance/`)
+- `GET /api/attendance/` - List attendance records
+- `POST /api/attendance/` - Create attendance record
+- `GET /api/attendance/{id}/` - Get specific attendance record
+- `PUT /api/attendance/{id}/` - Update attendance record
+- `POST /api/attendance/bulk_create/` - Create multiple attendance records
+- `GET /api/attendance/student_report/` - Get student attendance report
+- `GET /api/attendance/course_report/` - Get course attendance report
+
+# Grading Endpoints (`/api/grading/`)
+## Grade Components
+- `GET /api/grading/components/` - List grade components
+- `POST /api/grading/components/` - Create grade component
+- `GET /api/grading/components/{id}/` - Get specific component
+- `PUT /api/grading/components/{id}/` - Update component
+
+## Grades
+- `GET /api/grading/grades/` - List grades
+- `POST /api/grading/grades/` - Create grade
+- `GET /api/grading/grades/{id}/` - Get specific grade
+- `PUT /api/grading/grades/{id}/` - Update grade
+- `GET /api/grading/grades/course_grades/` - Get grades for a course
+- `GET /api/grading/grades/student_grades/` - Get grades for a student
+
+## Academic Records
+- `GET /api/grading/academic-records/` - List academic records
+- `POST /api/grading/academic-records/` - Create academic record
+- `GET /api/grading/academic-records/{id}/` - Get specific record
+- `GET /api/grading/academic-records/calculate_gpa/` - Calculate GPA
+
+# Departments Endpoints (`/api/departments/`)
+- `GET /api/departments/` - List departments
+- `POST /api/departments/` - Create department (admin only)
+- `GET /api/departments/{id}/` - Get specific department
+- `PUT /api/departments/{id}/` - Update department
+- `DELETE /api/departments/{id}/` - Delete department
+- `GET /api/departments/{id}/faculty_members/` - Get department faculty
+- `GET /api/departments/{id}/courses/` - Get department courses
+
+Most endpoints support filtering, searching, and pagination where appropriate. Protected endpoints require JWT authentication.
+
+# Complete Database Schema for University SIS
+
+### Users Module
+```sql
+Table: users
+- id (PK)
+- username (unique)
+- email (unique)
+- password (hashed)
+- role (choices: admin, faculty, student)
+- is_active (boolean)
+- created_at (datetime)
+- updated_at (datetime)
+
+Table: personal_info
+- id (PK)
+- user_id (FK -> users.id)
+- first_name
+- middle_name
+- last_name
+- date_of_birth
+- gender
+- national_id
+- photo_url
+
+Table: contact_info
+- id (PK)
+- user_id (FK -> users.id)
+- primary_phone
+- secondary_phone
+- address
+- city
+- state
+- country
+- emergency_contact_name
+- emergency_contact_phone
+- emergency_contact_relation
+```
+
+### Academic Module
+```sql
+Table: academic_programs
+- id (PK)
+- program_code (unique)
+- name
+- department_id (FK -> departments.id)
+- total_credits_required
+- minimum_gpa
+- degree_level (choices: bachelor, master, phd)
+- is_active
+
+Table: courses
+- id (PK)
+- course_code (unique)
+- title
+- description
+- credit_hours
+- department_id (FK -> departments.id)
+- course_level (choices: 100-500)
+- is_active
+
+Table: prerequisites
+- id (PK)
+- course_id (FK -> courses.id)
+- required_course_id (FK -> courses.id)
+- minimum_grade
+```
+
+### Enrollment Module
+```sql
+Table: terms
+- id (PK)
+- name
+- start_date
+- end_date
+- is_active
+
+Table: course_offerings
+- id (PK)
+- course_id (FK -> courses.id)
+- term_id (FK -> terms.id)
+- faculty_id (FK -> users.id)
+- section_number
+- capacity
+- schedule
+- room
+- status
+
+Table: enrollments
+- id (PK)
+- student_id (FK -> users.id)
+- course_offering_id (FK -> course_offerings.id)
+- enrollment_date
+- status (choices: enrolled, dropped, withdrawn)
+```
+
+### Attendance Module
+```sql
+Table: attendance_records
+- id (PK)
+- enrollment_id (FK -> enrollments.id)
+- date
+- status (choices: present, absent, late, excused)
+- notes
+```
+
+### Grading Module
+```sql
+Table: grade_components
+- id (PK)
+- course_offering_id (FK -> course_offerings.id)
+- name
+- weight
+- description
+
+Table: grades
+- id (PK)
+- enrollment_id (FK -> enrollments.id)
+- component_id (FK -> grade_components.id)
+- score
+- comments
+- date_submitted
+
+Table: academic_records
+- id (PK)
+- student_id (FK -> users.id)
+- term_id (FK -> terms.id)
+- gpa
+- academic_standing
+- total_credits_earned
+```
+
+### Departments Module
+```sql
+Table: departments
+- id (PK)
+- code (unique)
+- name
+- description
+- head_id (FK -> users.id)
+- is_active
+
+Table: department_faculty
+- id (PK)
+- department_id (FK -> departments.id)
+- faculty_id (FK -> users.id)
+- position
+- start_date
+- end_date
+```
+
+### Key Relationships:
+- Users can be students, faculty, or admins
+- Each user has one personal_info and one contact_info
+- Departments have many faculty members and courses
+- Academic programs belong to departments
+- Courses have prerequisites and belong to departments
+- Course offerings link courses with terms and faculty
+- Enrollments link students with course offerings
+- Attendance records track student attendance in enrollments
+- Grades are recorded per enrollment and grade component
+- Academic records track student progress per term
+
+All tables include standard audit fields (created_at, updated_at) and appropriate indexes on foreign keys and frequently queried fields.
