@@ -1,9 +1,21 @@
-FROM node:20-alpine
+FROM node:20-slim
+
+ARG TARGETARCH
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+# Install dependencies including optional platform-specific binaries (e.g., Rollup native)
+RUN npm ci --include=optional
+# Ensure Rollup's native binary matches the target architecture (amd64/arm64)
+RUN set -e; \
+    arch="${TARGETARCH:-amd64}"; \
+    case "$arch" in \
+      amd64) rollup_arch=x64 ;; \
+      arm64) rollup_arch=arm64 ;; \
+      *) echo "Unsupported arch $arch" && exit 1 ;; \
+    esac; \
+    npm install --no-save @rollup/rollup-linux-${rollup_arch}-gnu
 
 COPY . .
 

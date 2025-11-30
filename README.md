@@ -32,6 +32,13 @@ Override the backend URL at build time if needed:
 
 The container serves the production build via `npm run preview` on port `4173`.
 
+### Mac/Windows (multi-arch) build
+Apple Silicon Macs and Windows with Docker Desktop often run arm64; build a multi-arch image so both x86_64 and arm64 can use it:
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 -t sis-frontend --build-arg VITE_API_MODE=mock .
+```
+Push to a registry (or load locally with `--load`) so others can pull the right platform automatically.
+
 ## Useful paths
 - `src/api/apiConfig.js` — mode detection and helpers (pagination, search, mock id storage).
 - `src/api/mocks/mockApi.js` — mock implementations for auth, users, departments, courses, enrollment, attendance, and grading.
