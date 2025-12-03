@@ -260,57 +260,60 @@ const GradeList = () => {
     }
   };
 
-  const applyCurve = (grades, type, value) => {
+  const applyCurve = (gradesToAdjust, type, value) => {
+    const numeric = Number(value);
+
     switch (type) {
       case 'flat':
-        return grades.map(grade => ({
+        return gradesToAdjust.map(grade => ({
           ...grade,
-          grade: Math.min(100, grade.grade + value)
+          grade: Math.min(100, Math.round(grade.grade + numeric))
         }));
       case 'percentage':
-        return grades.map(grade => ({
+        return gradesToAdjust.map(grade => ({
           ...grade,
-          grade: Math.min(100, grade.grade * (1 + value / 100))
+          grade: Math.min(100, Math.round(grade.grade * (1 + numeric / 100)))
         }));
       case 'highest':
-        const highest = Math.max(...grades.map(g => g.grade));
-        const boost = value - highest;
-        return grades.map(grade => ({
+        const highest = Math.max(...gradesToAdjust.map(g => g.grade));
+        const boost = numeric - highest;
+        return gradesToAdjust.map(grade => ({
           ...grade,
-          grade: Math.min(100, grade.grade + boost)
+          grade: Math.min(100, Math.round(grade.grade + boost))
         }));
       default:
-        return grades;
+        return gradesToAdjust;
     }
+  };
+
+  const applyCurveToState = (type, value) => {
+    // Only apply curve to grades matching the current filter
+    setGrades(prev => {
+      const matches = prev.filter(g =>
+        (!filters.course || g.course.code === filters.course) &&
+        (!filters.component || g.component === filters.component)
+      );
+
+      const curved = applyCurve(matches, type, value);
+      const curvedById = new Map(curved.map(g => [g.id, g]));
+
+      toast.success(`Curve applied to ${curved.length} grades: ${type} ${value}${type === 'percentage' ? '%' : ' points'}`);
+
+      return prev.map(grade => curvedById.get(grade.id) || grade);
+    });
+
+    setCurveModal({ isOpen: false, type: '', value: 0 });
   };
 
   const handleApplyCurve = () => {
     const { type, value } = curveModal;
-    if (!type || !value) {
+    const numericValue = Number(value);
+    if (!type || Number.isNaN(numericValue) || numericValue <= 0) {
       toast.error('Please select a curve type and value');
       return;
     }
 
-    // Only apply curve to grades matching the current filter
-    setGrades(prev => {
-      const gradesToCurve = prev.filter(g => 
-        (!filters.course || g.course.code === filters.course) &&
-        (!filters.component || g.component === filters.component)
-      );
-      
-      const otherGrades = prev.filter(g => 
-        (filters.course && g.course.code !== filters.course) ||
-        (filters.component && g.component !== filters.component)
-      );
-      
-      const curvedGrades = applyCurve(gradesToCurve, type, Number(value));
-      
-      toast.success(`Curve applied to ${curvedGrades.length} grades: ${type} ${value}${type === 'percentage' ? '%' : ' points'}`);
-      
-      return [...otherGrades, ...curvedGrades];
-    });
-    
-    setCurveModal({ isOpen: false, type: '', value: 0 });
+    applyCurveToState(type, numericValue);
   };
 
   const CurveModal = ({ isOpen, onClose }) => isOpen && (
@@ -347,13 +350,16 @@ const GradeList = () => {
           </div>
           <div className="flex justify-end space-x-2 mt-4">
             <button
+              type="button"
               onClick={onClose}
               className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleApplyCurve}
+              data-testid="apply-curve-submit"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Apply Curve

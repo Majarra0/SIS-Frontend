@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FaShieldAlt, FaSave, FaUndo, FaCheck, FaSearch, FaUser } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
@@ -55,6 +55,21 @@ const PermissionManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const saveTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedUser && users.length) {
+      setSelectedUser(users[0]);
+    }
+  }, [selectedUser, users]);
 
   const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -67,7 +82,7 @@ const PermissionManagement = () => {
 
     setUsers(prev => prev.map(user => {
       if (user.id === selectedUser.id) {
-        return {
+        const updatedUser = {
           ...user,
           customPermissions: {
             ...user.customPermissions,
@@ -77,23 +92,34 @@ const PermissionManagement = () => {
             }
           }
         };
+        setSelectedUser(updatedUser);
+        return updatedUser;
       }
       return user;
     }));
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      toast.success(`Permissions updated for ${selectedUser.name}`);
-    } catch (error) {
-      toast.error('Failed to update permissions');
-    } finally {
-      setIsSaving(false);
+  const handleSave = () => {
+    if (!selectedUser) {
+      toast.warning('Select a user to update permissions');
+      return;
     }
+
+    setIsSaving(true);
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      setIsSaving(false);
+      saveTimeoutRef.current = null;
+    }, 1500);
   };
+
+  useEffect(() => {
+    if (isSaving && selectedUser) {
+      toast.success(`Permissions updated for ${selectedUser.name}`);
+    }
+  }, [isSaving, selectedUser]);
 
   return (
     <div className="container mx-auto px-4 py-8">
